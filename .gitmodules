@@ -1,0 +1,9 @@
+[submodule "Oreshnik"]
+	path = Oreshnik
+	url = https://github.com/NIASPO-KR/Oreshnik
+[submodule "Static"]
+	path = Static
+	url = https://github.com/NIASPO-KR/Static
+[submodule "Users"]
+	path = Users
+	url = https://github.com/NIASPO-KR/Users

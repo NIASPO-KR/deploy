@@ -1,0 +1,69 @@
+services:
+  oreshnik:
+    build:
+      context: ./Oreshnik
+      dockerfile: Dockerfile
+    depends_on:
+      static:
+        condition: service_started
+      users:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  static:
+    build:
+      context: ./Static
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      static-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  users:
+    build:
+      context: ./Users
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      oreshnik-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  static-postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: static
+      POSTGRES_PASSWORD: static123
+      POSTGRES_DB: static
+    volumes:
+      - ./data/db/static-postgres:/var/lib/postgresql/data
+    ports:
+      - "5441:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d static -U static -h static-postgres -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  oreshnik-postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: oreshnik
+      POSTGRES_PASSWORD: oreshnik123
+      POSTGRES_DB: oreshnik
+    volumes:
+      - ./data/db/oreshnik-postgres:/var/lib/postgresql/data
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d oreshnik -U oreshnik -h oreshnik-postgres -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
