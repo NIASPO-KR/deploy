@@ -1,23 +1,74 @@
 services:
-  oreshnik:
+  frontend-nginx:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - nginx-balancer
+    restart: unless-stopped
+
+  nginx-balancer:
+    build:
+      context: ./Balancer
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    depends_on:
+      oreshnik1:
+        condition: service_started
+      oreshnik2:
+        condition: service_started
+      oreshnik3:
+        condition: service_started
+    restart: unless-stopped
+
+  oreshnik1:
     build:
       context: ./Oreshnik
       dockerfile: Dockerfile
+    expose:
+      - "8078"
     depends_on:
       static:
         condition: service_started
       users:
         condition: service_started
-    ports:
-      - "8080:8080"
+    restart: unless-stopped
+
+  oreshnik2:
+    build:
+      context: ./Oreshnik
+      dockerfile: Dockerfile
+    expose:
+      - "8079"
+    depends_on:
+      static:
+        condition: service_started
+      users:
+        condition: service_started
+    restart: unless-stopped
+
+  oreshnik3:
+    build:
+      context: ./Oreshnik
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    depends_on:
+      static:
+        condition: service_started
+      users:
+        condition: service_started
     restart: unless-stopped
 
   static:
     build:
       context: ./Static
       dockerfile: Dockerfile
-    ports:
-      - "8081:8081"
+    expose:
+      - "8081"
     depends_on:
       static-postgres:
         condition: service_healthy
@@ -27,8 +78,8 @@ services:
     build:
       context: ./Users
       dockerfile: Dockerfile
-    ports:
-      - "8082:8082"
+    expose:
+      - "8082"
     depends_on:
       oreshnik-postgres:
         condition: service_healthy
@@ -42,8 +93,8 @@ services:
       POSTGRES_DB: static
     volumes:
       - ./data/db/static-postgres:/var/lib/postgresql/data
-    ports:
-      - "5441:5432"
+    expose:
+      - "5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d static -U static -h static-postgres -p 5432" ]
       interval: 10s
@@ -59,8 +110,8 @@ services:
       POSTGRES_DB: oreshnik
     volumes:
       - ./data/db/oreshnik-postgres:/var/lib/postgresql/data
-    ports:
-      - "5440:5432"
+    expose:
+      - "5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d oreshnik -U oreshnik -h oreshnik-postgres -p 5432" ]
       interval: 10s
